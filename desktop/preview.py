@@ -19,7 +19,7 @@ class PygameCanvas:
 
 def main():
     parser = argparse.ArgumentParser(description="N-Gage Hub desktop preview")
-    parser.add_argument("--scale", type=int, choices=range(1, 6), default=3)
+    parser.add_argument("--scale", type=int, choices=range(1, 6), default=1)
     args = parser.parse_args()
     window_size = (WIDTH * args.scale, HEIGHT * args.scale)
 

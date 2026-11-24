@@ -19,7 +19,7 @@ Start the preview with live reload.
 
 Press **Space** to switch between weather samples and **Esc** to close the preview. The watcher checks Python files under `hub/` and `desktop/` five times per second. Saving a file starts a fresh preview window and resets it to the default sample. If a save causes a Python error, the terminal shows the traceback and watches for your next save. Restart the dev command itself after editing `desktop/dev.py`.
 
-Add `--scale 2` for 2× zoom. The range is 1×–5×, with 3× as the default. For a one-off preview, run `.venv/bin/python -B -m desktop.preview`.
+The preview opens at 176 × 208 by default. Add `--scale 2` for 2× zoom. The range is 1×–5×. For a one-off preview, run `.venv/bin/python -B -m desktop.preview`.
 
 ## Edit the dashboard
 
