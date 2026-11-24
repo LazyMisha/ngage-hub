@@ -1,26 +1,73 @@
-"""Render the 176 x 208 dashboard through a single canvas primitive."""
+"""Render the 176 x 208 clock through a single canvas primitive."""
 
 from hub.bitmap import draw_bitmap
+from hub.day_cycle import draw_day_cycle
+from hub.mock_weather import LODZ
 from hub.pixel_font import draw_text, text_width
+from hub.sunset import SUNSET_GROUND, blend, draw_sunset
 
 
 WIDTH = 176
 HEIGHT = 208
-
-BACKGROUND = (6, 15, 28)
-PANEL = (12, 29, 48)
-SKY = (9, 23, 40)
-LINE = (40, 72, 96)
-MUTED = (143, 171, 194)
-WHITE = (229, 246, 252)
-CYAN = (117, 212, 247)
-LIME = (192, 249, 82)
-LIME_SHADOW = (44, 74, 43)
+CREAM = (255, 224, 170)
+SHADOW = (62, 12, 5)
+GOLD = (255, 166, 55)
+AMBER = (238, 107, 18)
 
 MONTHS = ("JAN", "FEB", "MAR", "APR", "MAY", "JUN",
           "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")
 WEEKDAYS = ("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
 
+CARD_CORNERS = (10, 7, 5, 4, 3, 2, 2, 1, 1, 0)
+
+NUMBERS = {
+    "0": ".####. ###### ##..## ##..## ##..## ##..## ##..## ###### .####.",
+    "1": "..##.. .###.. ####.. ..##.. ..##.. ..##.. ..##.. ..##.. ######",
+    "2": ".####. ###### ##..## ....## ...##. ..##.. .##... ##.... ######",
+    "3": ".####. ###### ....## ....## ..###. ....## ....## ###### .####.",
+    "4": "....## ...### ..#.## .#..## ##..## ###### ###### ....## ....##",
+    "5": "###### ##.... ##.... #####. .##### ....## ....## ###### .####.",
+    "6": "..###. .##... ##.... #####. ###### ##..## ##..## ###### .####.",
+    "7": "###### ....## ...##. ...##. ..##.. ..##.. .##... .##... .##...",
+    "8": ".####. ###### ##..## ##..## .####. ##..## ##..## ###### .####.",
+    "9": ".####. ###### ##..## ##..## ###### .##### ....## ...##. .###..",
+    ":": ".. .. ## ## .. .. ## ## ..",
+}
+for digit in NUMBERS:
+    NUMBERS[digit] = NUMBERS[digit].split()
+
+MOON = (
+    "..........hhh",
+    "........hhhh",
+    "......hhhhs",
+    ".....hhhhss",
+    "....hhhgss",
+    "...hhhggss",
+    "...hhgggss",
+    "..hhhgggss",
+    "..hhggggss",
+    ".hhgggggss",
+    ".hhgggggss",
+    ".hhgggggss",
+    ".hhgggggss",
+    ".hhgggggss",
+    "hhggggggss",
+    ".hhggggggss",
+    ".hhggggggss",
+    ".hhgggggggss",
+    ".hhgggggggsss",
+    ".hhggggggggsss",
+    "..hhggggggggsss",
+    "..hhhggggggggsss",
+    "...hhgggggggggssss",
+    "...hhhggggggggggssssssssshhh",
+    "....hhhgggggggggggsssssshhh",
+    ".....hhhhggggggggggggghhhh",
+    "......hhhhggggggggggghhhh",
+    "........hhhhhhhghhhhhhh",
+    "..........hhhhhhhhhhh",
+)
+MOON_COLORS = {"h": (255, 220, 126), "g": (255, 184, 51), "s": (242, 132, 21)}
 SUN = (
     "....oooo.....",
     "..ooyyyyo....",
@@ -53,89 +100,113 @@ CLOUD = (
     "..aaaaaaaaaaaaaaaaaaaa...",
 )
 CLOUD_COLORS = {
-    "a": (56, 108, 145), "w": (202, 234, 245),
-    "b": (137, 188, 217), "c": (87, 149, 184),
+    "a": (148, 66, 31), "w": (251, 215, 161),
+    "b": (214, 154, 104), "c": (185, 119, 75),
 }
 RAIN_CLOUD_COLORS = {
-    "a": (56, 108, 145), "w": (140, 181, 207),
-    "b": (106, 154, 186), "c": (81, 129, 164),
+    "a": (104, 75, 73), "w": (182, 162, 156),
+    "b": (152, 127, 129), "c": (124, 100, 110),
 }
+
+
+def _draw_numbers(canvas, x, y, value, color, scale):
+    palette = {"#": color}
+    for digit in value:
+        rows = NUMBERS[digit]
+        draw_bitmap(canvas, x, y, rows, palette, scale)
+        x += (len(rows[0]) + 1) * scale
+
+
+def _draw_clock(canvas, local_time, top, date_top, ink, shadow):
+    clock = "%02d:%02d" % (local_time[3], local_time[4])
+    _draw_numbers(canvas, 28, top - 1, clock, shadow, 4)
+    _draw_numbers(canvas, 30, top + 2, clock, shadow, 4)
+    _draw_numbers(canvas, 28, top, clock, ink, 4)
+    date = "%s %02d %s" % (WEEKDAYS[local_time[6]], local_time[2],
+                           MONTHS[local_time[1] - 1])
+    x = (WIDTH - text_width(date, 1.5)) // 2
+    draw_text(canvas, x + 1, date_top + 1, date, shadow, 1.5)
+    draw_text(canvas, x, date_top, date, ink, 1.5)
+
+
+def _draw_card(canvas):
+    height = 70
+    for row in range(height):
+        inset = CARD_CORNERS[min(row, height - 1 - row, 9)]
+        edge = blend(GOLD, AMBER, row, height - 1)
+        canvas.fill_rect(3 + inset, 112 + row, 170 - 2 * inset, 1, edge)
+
+    for row in range(1, height - 1):
+        inset = 1 + CARD_CORNERS[min(row - 1, height - 2 - row, 9)]
+        left = 3 + inset
+        right = 173 - inset
+        y = 112 + row
+        fill = blend((49, 13, 4), (65, 16, 4), row, height - 1)
+        canvas.fill_rect(left, y, right - left, 1, fill)
+        curve = 89 + (181 - y) ** 2 // 53
+        if curve < right:
+            width = min(3, right - curve)
+            shade = blend((66, 18, 4), (124, 32, 3), row, height - 1)
+            canvas.fill_rect(curve, y, right - curve, 1, shade)
+            canvas.fill_rect(curve, y, width, 1, blend((109, 29, 3), (169, 52, 5),
+                                                        row, height - 1))
+
+
+def _draw_star(canvas, x, y, arm, color):
+    canvas.fill_rect(x - arm, y, 2 * arm + 1, 1, color)
+    canvas.fill_rect(x, y - arm, 1, 2 * arm + 1, color)
 
 
 def _draw_weather_art(canvas, condition, elapsed_ms):
-    canvas.fill_rect(14, 110, 69, 66, SKY)
-    for y in (116, 124, 132, 140, 148, 156, 164, 172):
-        for x in (19, 27, 35, 43, 51, 59, 67, 75):
-            canvas.fill_rect(x, y, 1, 1, PANEL)
+    pulse = (elapsed_ms // 440) % 2
+    if condition == "CLEAR":
+        draw_bitmap(canvas, 120, 140, MOON, MOON_COLORS, 1)
+        _draw_star(canvas, 149, 141, 2 + pulse, CREAM)
+        _draw_star(canvas, 157, 151, 2 - pulse, GOLD)
+        return
 
     if condition == "SUNNY":
-        draw_bitmap(canvas, 34, 132, SUN, SUN_COLORS, 3)
-        ray = (elapsed_ms // 450) % 2
-        canvas.fill_rect(49, 122 - ray, 2, 5, SUN_COLORS["y"])
-        canvas.fill_rect(49, 168 + ray, 2, 4, SUN_COLORS["y"])
-        canvas.fill_rect(26 - ray, 145, 5, 2, SUN_COLORS["y"])
-        canvas.fill_rect(72 + ray, 145, 5, 2, SUN_COLORS["y"])
+        draw_bitmap(canvas, 127, 141, SUN, SUN_COLORS, 2)
+        canvas.fill_rect(138, 134 - pulse, 2, 5, GOLD)
+        canvas.fill_rect(138, 166 + pulse, 2, 5, GOLD)
+        canvas.fill_rect(119 - pulse, 150, 5, 2, GOLD)
+        canvas.fill_rect(155 + pulse, 150, 5, 2, GOLD)
         return
 
-    drift = (elapsed_ms // 230) % 12
-    drift = min(drift, 12 - drift)
+    drift = (elapsed_ms // 230) % 10
+    drift = min(drift, 10 - drift)
     if condition == "RAIN":
-        draw_bitmap(canvas, 20 + drift, 120, CLOUD, RAIN_CLOUD_COLORS, 2)
-        for index in range(6):
-            y = 145 + (elapsed_ms // 65 + index * 5) % 24
-            x = 23 + index * 9 - (y - 145) // 8
-            canvas.fill_rect(x, y, 2, 4, CYAN)
+        draw_bitmap(canvas, 112 + drift, 137, CLOUD, RAIN_CLOUD_COLORS, 2)
+        for index in range(5):
+            y = 162 + (elapsed_ms // 75 + index * 4) % 12
+            x = 118 + index * 8 - (y - 162) // 6
+            canvas.fill_rect(x, y, 1, 3, (188, 194, 204))
         return
 
-    draw_bitmap(canvas, 31, 119, SUN, SUN_COLORS, 2)
-    draw_bitmap(canvas, 20 + drift, 133, CLOUD, CLOUD_COLORS, 2)
-    canvas.fill_rect(66, 120, 6, 1, LINE)
-    canvas.fill_rect(69, 123, 7, 1, MUTED)
-    canvas.fill_rect(23, 165, 12, 1, LINE)
-    canvas.fill_rect(29, 168, 12, 1, LINE)
+    draw_bitmap(canvas, 135, 136, SUN, SUN_COLORS, 2)
+    draw_bitmap(canvas, 108 + drift, 151, CLOUD, CLOUD_COLORS, 2)
 
 
-def _center_text(canvas, center, y, value, color, scale=1):
-    draw_text(canvas, center - text_width(value, scale) // 2, y,
-              value, color, scale)
+def render(canvas, local_time, weather=None, elapsed_ms=0):
+    """Draw the clock with an optional weather sample."""
+    if weather is None:
+        ink, shadow = draw_day_cycle(canvas, WIDTH, HEIGHT, local_time[3])
+        _draw_clock(canvas, local_time, top=53, date_top=96, ink=ink, shadow=shadow)
+        x = (WIDTH - text_width(LODZ, 2)) // 2
+        draw_text(canvas, x + 1, 118, LODZ, shadow, 2)
+        draw_text(canvas, x, 117, LODZ, ink, 2)
+        return
 
-
-def render(canvas, local_time, weather, elapsed_ms):
-    """Draw one complete frame. local_time uses time.localtime() tuple fields."""
-    canvas.fill_rect(0, 0, WIDTH, HEIGHT, BACKGROUND)
-
-    canvas.fill_rect(9, 11, 3, 7, LIME)
-    canvas.fill_rect(14, 11, 3, 3, LIME)
-    canvas.fill_rect(14, 15, 3, 3, LINE)
-    draw_text(canvas, 23, 11, "N-GAGE HUB", WHITE)
-    location = weather["location"]
-    draw_text(canvas, 166 - text_width(location), 11, location, CYAN)
-    canvas.fill_rect(8, 26, 160, 1, LINE)
-    canvas.fill_rect(8, 26, 19, 1, CYAN)
-
-    hour, minute, second = local_time[3:6]
-    clock = "%02d:%02d" % (hour, minute)
-    _center_text(canvas, 89, 41, clock, LIME_SHADOW, 5)
-    _center_text(canvas, 88, 39, clock, LIME, 5)
-    date = "%s  %02d %s" % (WEEKDAYS[local_time[6]], local_time[2],
-                            MONTHS[local_time[1] - 1])
-    _center_text(canvas, 88, 85, date, MUTED)
-    canvas.fill_rect(12, 88, 27, 1, LINE)
-    canvas.fill_rect(137, 88, 27, 1, LINE)
-
-    canvas.fill_rect(9, 104, 158, 78, LINE)
-    canvas.fill_rect(8, 105, 160, 76, LINE)
-    canvas.fill_rect(9, 105, 158, 76, PANEL)
+    canvas.fill_rect(0, 0, WIDTH, HEIGHT, SUNSET_GROUND)
+    draw_sunset(canvas, WIDTH, 113)
+    _draw_clock(canvas, local_time, top=40, date_top=79, ink=CREAM, shadow=SHADOW)
+    _draw_card(canvas)
+    draw_text(canvas, 15, 119, weather["location"], CREAM, 2)
+    canvas.fill_rect(13, 134, 94, 1, (170, 94, 51))
+    temperature = "%d" % weather["temp_c"]
+    draw_text(canvas, 16, 139, temperature, CREAM, 3)
+    x = 20 + text_width(temperature, 3)
+    draw_text(canvas, x, 140, "\xb0", CREAM, 2)
+    draw_text(canvas, x + 9, 140, "C", CREAM, 3)
+    draw_text(canvas, 16, 166, weather["condition"], CREAM, 1.5)
     _draw_weather_art(canvas, weather["condition"], elapsed_ms)
-    canvas.fill_rect(88, 112, 1, 62, LINE)
-
-    draw_text(canvas, 95, 115, weather["condition"], CYAN)
-    draw_text(canvas, 95, 131, "%d\xb0C" % weather["temp_c"], WHITE, 3)
-    draw_text(canvas, 95, 165, "H %d  L %d" % (weather["high_c"], weather["low_c"]),
-              MUTED)
-
-    canvas.fill_rect(8, 190, 160, 1, LINE)
-    canvas.fill_rect(9, 197, 4, 4, LIME)
-    draw_text(canvas, 17, 196, "DEMO WEATHER", MUTED)
-    seconds = "SEC %02d" % second
-    draw_text(canvas, 166 - text_width(seconds), 196, seconds, MUTED)

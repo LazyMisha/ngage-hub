@@ -1,12 +1,11 @@
 """Draw the shared dashboard in a native Pygame window."""
 
 import argparse
-from time import localtime, monotonic
+from time import localtime
 
 import pygame
 
 from hub.dashboard import HEIGHT, WIDTH, render
-from hub.mock_weather import SAMPLES
 
 
 class PygameCanvas:
@@ -26,27 +25,20 @@ def main():
     pygame.display.init()
     try:
         window = pygame.display.set_mode(window_size)
-        pygame.display.set_caption("N-Gage Hub | Space: weather | Esc: quit")
+        pygame.display.set_caption("N-Gage Hub")
         frame = pygame.Surface((WIDTH, HEIGHT)).convert(window)
         canvas = PygameCanvas(frame)
         frame_clock = pygame.time.Clock()
-        sample = 0
-        started = monotonic()
         first_frame = True
 
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        return
-                    if event.key == pygame.K_SPACE:
-                        sample = (sample + 1) % len(SAMPLES)
-                        started = monotonic()
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    return
 
-            elapsed_ms = int((monotonic() - started) * 1000)
-            render(canvas, localtime(), SAMPLES[sample], elapsed_ms)
+            render(canvas, localtime())
             pygame.transform.scale(frame, window_size, window)
             pygame.display.flip()
             if first_frame:

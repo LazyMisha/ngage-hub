@@ -1,4 +1,4 @@
-"""Small bitmap alphabet, with matching large and small text at integer scales."""
+"""Small bitmap alphabet with pixel-aligned text scaling."""
 
 from hub.bitmap import draw_bitmap
 
@@ -40,6 +40,22 @@ GLYPHS = {
     "X": "#...# #...# .#.#. ..#.. .#.#. #...# #...#",
     "Y": "#...# #...# .#.#. ..#.. ..#.. ..#.. ..#..",
     "Z": "##### ....# ...#. ..#.. .#... #.... #####",
+    u"\u0141": "#.... #.... #.#.. ###.. ##... #.... #####",
+    u"\u00d3": "...#. ..#.. .###. #...# #...# #...# #...# #...# .###.",
+    u"\u0179": "...#. ..#.. ##### ....# ...#. ..#.. .#... #.... #####",
+    "a": ".... .... .##. ...# .### #..# .###",
+    "e": ".... .... .##. #..# #### #... .###",
+    "h": "#... #... ###. #..# #..# #..# #..#",
+    "i": ".#. ... ##. .#. .#. .#. ###",
+    "m": "..... ..... ##.#. #.#.# #.#.# #.#.# #.#.#",
+    "n": ".... .... ###. #..# #..# #..# #..#",
+    "o": ".... .... .##. #..# #..# #..# .##.",
+    "p": ".... ###. #..# #..# ###. #... #...",
+    "r": ".... .... #.## ##.. #... #... #...",
+    "s": ".... .... .### #... .##. ...# ###.",
+    "t": ".#. .#. ### .#. .#. .#. ..#",
+    "x": ".... .... #..# #..# .##. #..# #..#",
+    "&": ".##.. #..#. #.#.. .##.. #.#.# #..#. .##.#",
     " ": "... ... ... ... ... ... ...",
     ":": ". . # . # . .",
     "-": "... ... ... ### ... ... ...",
@@ -56,12 +72,14 @@ def text_width(value, scale=1):
     for character in value:
         rows = GLYPHS.get(character, GLYPHS["?"])
         width += len(rows[0]) + 1
-    return max(0, width - 1) * scale
+    return int(max(0, width - 1) * scale)
 
 
 def draw_text(canvas, x, y, value, color, scale=1):
     palette = {"#": color}
+    advance = 0
     for character in value:
         rows = GLYPHS.get(character, GLYPHS["?"])
-        draw_bitmap(canvas, x, y, rows, palette, scale)
-        x += (len(rows[0]) + 1) * scale
+        draw_bitmap(canvas, x + int(advance * scale), y - int((len(rows) - 7) * scale),
+                    rows, palette, scale)
+        advance += len(rows[0]) + 1
