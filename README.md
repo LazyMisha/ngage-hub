@@ -8,6 +8,10 @@ A **176 × 208** pixel-art clock for the original Nokia N-Gage. It shows the tim
   <img src="docs/screens/sunset.png" alt="N-Gage Hub at 18:42 with an orange sunset" width="176">
 </p>
 
+<p align="center">
+  <img src="docs/screens/demo.gif" alt="N-Gage Hub running on a physical Nokia N-Gage" width="480">
+</p>
+
 <details>
 <summary>See all 12 backgrounds</summary>
 
