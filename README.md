@@ -65,7 +65,6 @@ Saving Python files under `hub/` or `desktop/` restarts the preview. If a save i
 | [`hub/dashboard.py`](hub/dashboard.py) | Time, date, and city layout |
 | [`hub/day_cycle.py`](hub/day_cycle.py) and [`hub/sunset.py`](hub/sunset.py) | Two-hour sky scenes, skyline, and colors |
 | [`hub/pixel_font.py`](hub/pixel_font.py) | Bitmap lettering |
-| [`hub/mock_weather.py`](hub/mock_weather.py) | City label and optional development weather samples |
 | [`desktop/`](desktop/) | Pygame preview and file watcher |
 | [`symbian/`](symbian/) | PyS60 launcher, builder, and transfer files |
 

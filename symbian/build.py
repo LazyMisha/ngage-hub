@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-HUB_MODULES = ("__init__", "bitmap", "pixel_font", "mock_weather", "sunset",
+HUB_MODULES = ("__init__", "bitmap", "pixel_font", "sunset",
                "day_cycle", "dashboard")
 
 # PyS60's Inbox can install one script at a time. Keep the shared modules
