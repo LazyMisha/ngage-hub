@@ -13,7 +13,7 @@ HUB_MODULES = ("__init__", "bitmap", "pixel_font", "mock_weather", "sunset",
 LOADER = '''import sys
 
 
-def run_ngage(sources, launcher):
+def run_ngage(sources, launcher, keep_awake):
     previous = []
     try:
         for name, path, source in sources:
@@ -29,7 +29,7 @@ def run_ngage(sources, launcher):
             eval(compile(source, path, "exec"), module.__dict__)
         entry = {"__name__": "ngage_phone"}
         eval(compile(launcher, "symbian/launcher.py", "exec"), entry)
-        entry["main"]()
+        entry["main"](keep_awake)
     finally:
         for name, module in previous:
             if module is not None:
@@ -45,6 +45,14 @@ def source_literal(path, indent):
     return "\n".join(indent + repr(line) for line in source.splitlines(keepends=True))
 
 
+def binary_literal(path, indent):
+    data = (ROOT / path).read_bytes()
+    return "\n".join(
+        indent + '"' + "".join(f"\\x{value:02x}" for value in data[offset:offset + 24]) + '"'
+        for offset in range(0, len(data), 24)
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", nargs="?", type=Path, default=ROOT / "build" / "ngage_hub.py")
@@ -57,7 +65,9 @@ def main():
         path = f"hub/{module}.py"
         sections.extend((f"    ({name!r}, {path!r},",
                          source_literal(path, "        "), "    ),"))
-    sections.extend(("), (", source_literal("symbian/launcher.py", "    "), "))", ""))
+    sections.extend(("), (", source_literal("symbian/launcher.py", "    "),
+                     "), (", binary_literal("symbian/_ngageawake_v1.pyd", "    "),
+                     "))", ""))
     bundle = "\n".join(sections)
     compile(bundle, output.name, "exec")
     output.parent.mkdir(parents=True, exist_ok=True)

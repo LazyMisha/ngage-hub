@@ -2,4 +2,5 @@
 .venv/
 __pycache__/
 *.py[cod]
+!/symbian/_ngageawake_v1.pyd
 /build/

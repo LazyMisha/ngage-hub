@@ -9,6 +9,7 @@ from hub.sunset import SUNSET_GROUND, blend, draw_sunset
 
 WIDTH = 176
 HEIGHT = 208
+COLON_REGION = (84, 60, 10, 27)
 CREAM = (255, 224, 170)
 SHADOW = (62, 12, 5)
 GOLD = (255, 166, 55)
@@ -109,24 +110,33 @@ RAIN_CLOUD_COLORS = {
 }
 
 
-def _draw_numbers(canvas, x, y, value, color, scale):
+def _draw_numbers(canvas, x, y, value, color, scale, show_colon):
     palette = {"#": color}
     for digit in value:
         rows = NUMBERS[digit]
-        draw_bitmap(canvas, x, y, rows, palette, scale)
+        if digit != ":" or show_colon:
+            draw_bitmap(canvas, x, y, rows, palette, scale)
         x += (len(rows[0]) + 1) * scale
 
 
-def _draw_clock(canvas, local_time, top, date_top, ink, shadow):
+def _draw_label(canvas, value, top, scale, ink, shadow, outlined=False):
+    x = (WIDTH - text_width(value, scale)) // 2
+    if outlined:
+        for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            draw_text(canvas, x + dx, top + dy, value, shadow, scale)
+    else:
+        draw_text(canvas, x + 1, top + 1, value, shadow, scale)
+    draw_text(canvas, x, top, value, ink, scale)
+
+
+def _draw_clock(canvas, local_time, top, date_top, ink, shadow, date_scale=1.5, show_colon=True):
     clock = "%02d:%02d" % (local_time[3], local_time[4])
-    _draw_numbers(canvas, 28, top - 1, clock, shadow, 4)
-    _draw_numbers(canvas, 30, top + 2, clock, shadow, 4)
-    _draw_numbers(canvas, 28, top, clock, ink, 4)
+    _draw_numbers(canvas, 28, top - 1, clock, shadow, 4, show_colon)
+    _draw_numbers(canvas, 30, top + 2, clock, shadow, 4, show_colon)
+    _draw_numbers(canvas, 28, top, clock, ink, 4, show_colon)
     date = "%s %02d %s" % (WEEKDAYS[local_time[6]], local_time[2],
                            MONTHS[local_time[1] - 1])
-    x = (WIDTH - text_width(date, 1.5)) // 2
-    draw_text(canvas, x + 1, date_top + 1, date, shadow, 1.5)
-    draw_text(canvas, x, date_top, date, ink, 1.5)
+    _draw_label(canvas, date, date_top, date_scale, ink, shadow, date_scale == 2)
 
 
 def _draw_card(canvas):
@@ -187,15 +197,44 @@ def _draw_weather_art(canvas, condition, elapsed_ms):
     draw_bitmap(canvas, 108 + drift, 151, CLOUD, CLOUD_COLORS, 2)
 
 
-def render(canvas, local_time, weather=None, elapsed_ms=0):
+BRAND_GLYPHS = (
+    ("##....## ###...## ####..## ##.##.## ##..#### ##...### ##....##", (255, 58, 48)),
+    ("........ ........ ........ .######. ........ ........ ........", (255, 58, 48)),
+    ("..###### .##..... .##..... .##..### .##...## .##...## ..######", (235, 242, 248)),
+    ("...####. .##..##. .##..##. .######. .##..##. .##..##. .##..##.", (235, 242, 248)),
+    ("...##### .##..... .##..... .##..### .##...## .##...## ..######", (235, 242, 248)),
+    ("..###### .##..... .##..... .######. .##..... .##..... ..######", (235, 242, 248)),
+)
+
+
+def _draw_brand(canvas):
+    x = (WIDTH - (len(BRAND_GLYPHS) * 9 - 1) * 2) // 2
+    for glyph, color in BRAND_GLYPHS:
+        rows = glyph.split()
+        draw_bitmap(canvas, x + 1, 25, rows, {"#": (18, 23, 32)}, 2)
+        draw_bitmap(canvas, x, 23, rows, {"#": color}, 2)
+        x += 18
+
+
+def draw_colon(canvas, ink, shadow):
+    dots = NUMBERS[":"]
+    draw_bitmap(canvas, 84, 52, dots, {"#": shadow}, 4)
+    draw_bitmap(canvas, 86, 55, dots, {"#": shadow}, 4)
+    draw_bitmap(canvas, 84, 53, dots, {"#": ink}, 4)
+
+
+def render(canvas, local_time, weather=None, elapsed_ms=0, animate_colon=True):
     """Draw the clock with an optional weather sample."""
     if weather is None:
         ink, shadow = draw_day_cycle(canvas, WIDTH, HEIGHT, local_time[3])
-        _draw_clock(canvas, local_time, top=53, date_top=96, ink=ink, shadow=shadow)
-        x = (WIDTH - text_width(LODZ, 2)) // 2
-        draw_text(canvas, x + 1, 118, LODZ, shadow, 2)
-        draw_text(canvas, x, 117, LODZ, ink, 2)
-        return
+        _draw_brand(canvas)
+        # Seven clear pixels between rows, including shadows and city accents.
+        _draw_clock(canvas, local_time, top=53, date_top=99, ink=ink,
+                    shadow=shadow, date_scale=2, show_colon=False)
+        _draw_label(canvas, LODZ, 128, 3, ink, shadow, True)
+        if animate_colon and local_time[5] % 2 == 0:
+            draw_colon(canvas, ink, shadow)
+        return ink, shadow
 
     canvas.fill_rect(0, 0, WIDTH, HEIGHT, SUNSET_GROUND)
     draw_sunset(canvas, WIDTH, 113)

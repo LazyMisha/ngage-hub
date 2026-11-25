@@ -24,7 +24,9 @@ The original Nokia N-Gage (NEM-4) uses Series 60. The included PyS60 1.3.1 insta
 3. Copy the clock script into `System/Apps/Python/my/` on the card, creating `my` if needed. Keep it on the same drive as PyS60 so the Python menu can find it. [Clock script](symbian/ngage_hub.py) · [Nokia’s script installation guide](https://mobilenin.com/pys60/resources/pys60_v_1_2/Getting_Started_with_Python.pdf#page=14)
 4. Open **Python → Options → Run script → ngage_hub.py**. Press the **right softkey** to return to Python.
 
-On first launch, check that the dashboard fills the screen and the clock matches the phone. If installation or launch fails, note the exact message and the Classic’s firmware version.
+On first launch, check that the dashboard fills the screen and the clock matches the phone. Leave it untouched past the usual backlight and screensaver timeouts to check that it stays visible. The script resets the inactivity timer while it runs and stops resetting it when you exit.
+
+The phone script includes a small EKA1 helper for PyS60 1.3.1 and caches it on the Python drive or in phone memory. Transfer only `ngage_hub.py`. If the phone cannot load the helper, the script shows a notice and continues displaying the clock with the phone’s normal timeout.
 
 <details>
 <summary>Bluetooth transfer</summary>
@@ -68,5 +70,12 @@ The shared renderer uses Python 2.2-compatible syntax and draws through a single
 After editing the dashboard, rebuild the phone script from the project directory.
 
 ```sh
+python3 symbian/build.py symbian/ngage_hub.py
+```
+
+If you change the EKA1 helper in `symbian/awake.s`, rebuild it with GNU Arm binutils before rebuilding the phone script.
+
+```sh
+python3 symbian/build_awake.py
 python3 symbian/build.py symbian/ngage_hub.py
 ```
