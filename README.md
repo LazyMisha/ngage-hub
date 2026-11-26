@@ -1,6 +1,6 @@
 # N-Gage Hub
 
-A **176 × 208** pixel-art clock for the original Nokia N-Gage. It shows the time, date, and city over the Łódź skyline. The background follows the device’s local clock through twelve two-hour scenes, from midnight to late evening.
+A **176 × 208** pixel-art clock for the original Nokia N-Gage. It shows the time, date, and city over the Łódź skyline. The background follows the device’s local clock through **48 scenes**, switching at the top and bottom of each hour. The cycle starts at 00:00 and wraps after the 23:30 scene.
 
 <p align="center">
   <img src="docs/screens/midnight.png" alt="N-Gage Hub at 00:42 with a moon and stars" width="176">
@@ -13,9 +13,9 @@ A **176 × 208** pixel-art clock for the original Nokia N-Gage. It shows the tim
 </p>
 
 <details>
-<summary>See all 12 backgrounds</summary>
+<summary>See all 48 backgrounds</summary>
 
-![All twelve N-Gage Hub backgrounds in two-hour order from midnight to late evening](docs/screens/day-cycle.png)
+![All 48 N-Gage Hub backgrounds in 30-minute order from 00:00 to 23:30](docs/screens/day-cycle.png)
 
 </details>
 
@@ -63,7 +63,7 @@ Saving Python files under `hub/` or `desktop/` restarts the preview. If a save i
 | File | What to edit |
 | --- | --- |
 | [`hub/dashboard.py`](hub/dashboard.py) | Time, date, and city layout |
-| [`hub/day_cycle.py`](hub/day_cycle.py) and [`hub/sunset.py`](hub/sunset.py) | Two-hour sky scenes, skyline, and colors |
+| [`hub/day_cycle.py`](hub/day_cycle.py) and [`hub/sunset.py`](hub/sunset.py) | Half-hour sky scenes, skyline, and colors |
 | [`hub/pixel_font.py`](hub/pixel_font.py) | Bitmap lettering |
 | [`desktop/`](desktop/) | Pygame preview and file watcher |
 | [`symbian/`](symbian/) | PyS60 launcher, builder, and transfer files |
