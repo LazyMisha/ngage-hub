@@ -84,7 +84,8 @@ def draw_colon(canvas, ink, shadow):
 
 def render(canvas, local_time, animate_colon=True):
     """Draw the clock and skyline for the device's current local time."""
-    ink, shadow = draw_day_cycle(canvas, WIDTH, HEIGHT, local_time[3])
+    ink, shadow = draw_day_cycle(canvas, WIDTH, HEIGHT, local_time[3],
+                                 local_time[4])
     _draw_brand(canvas)
     # Seven clear pixels between rows, including shadows and city accents.
     _draw_clock(canvas, local_time, top=53, date_top=99, ink=ink,
